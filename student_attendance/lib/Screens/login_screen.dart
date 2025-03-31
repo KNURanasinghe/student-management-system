@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'admin_home_screen.dart';
-import 'clz_teacher_home_screen.dart';
+import 'ClassTeacher/clz_teacher_home_screen.dart';
 import 'teacher_home_screen.dart';
 
 // Define user types for clearer code

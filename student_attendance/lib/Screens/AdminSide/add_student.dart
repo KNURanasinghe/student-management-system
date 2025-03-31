@@ -25,10 +25,15 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
 
   String? _selectedGrade;
   String? _selectedClass;
+  String? _selectedGender;
   File? _imageFile;
   bool _isLoading = false;
   String? _errorMessage;
-  // Lists of available grades and classes
+  String? _selectedSubjectCategory1;
+  String? _selectedSubjectCategory3;
+  String? _selectedSubjectCategory2;
+
+  // Lists of available grades, classes, and genders
   final List<String> _grades = [
     'Grade 6',
     'Grade 7',
@@ -36,7 +41,11 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     'Grade 9',
     'Grade 10',
     'Grade 11',
-    'Grade 12'
+  ];
+
+  final List<String> _genders = [
+    'Boy',
+    'Girl',
   ];
 
   final Map<String, List<String>> _classOptions = {
@@ -46,8 +55,76 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     'Grade 9': ['Class A', 'Class B', 'Class C'],
     'Grade 10': ['Class A', 'Class B', 'Class C'],
     'Grade 11': ['Class A', 'Class B', 'Class C'],
-    'Grade 12': ['Class A', 'Class B', 'Class C'],
   };
+  List<dynamic> _subjectCategories1 = [];
+  List<dynamic> _subjectCategories2 = [];
+  List<dynamic> _subjectCategories3 = [];
+  @override
+  void initState() {
+    super.initState();
+    _fetchSubjectCategories();
+  }
+
+  Future<void> _fetchSubjectCategories() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Print detailed information about the fetch process
+      print('Fetching Subject Categories...');
+
+      // Fetch categories
+      final response = await _apiService.getBasket1();
+      final response1 = await _apiService.getBasket2();
+      final response2 = await _apiService.getBasket3();
+
+      // Print raw responses for debugging
+      print('Basket1 Response: $response');
+      print('Basket2 Response: $response1');
+      print('Basket3 Response: $response2');
+
+      setState(() {
+        // Safely extract records, with null check and empty list fallback
+        _subjectCategories1 = (response['records'] as List?) ?? [];
+        _subjectCategories2 = (response1['records'] as List?) ?? [];
+        _subjectCategories3 = (response2['records'] as List?) ?? [];
+
+        // Print extracted categories for verification
+        print('Subject Categories 1: $_subjectCategories1');
+        print('Subject Categories 2: $_subjectCategories2');
+        print('Subject Categories 3: $_subjectCategories3');
+
+        // Set default selections only if lists are not empty
+        if (_subjectCategories1.isNotEmpty) {
+          _selectedSubjectCategory1 = _subjectCategories1[0]['id'];
+        }
+        if (_subjectCategories2.isNotEmpty) {
+          _selectedSubjectCategory2 = _subjectCategories2[0]['id'];
+        }
+        if (_subjectCategories3.isNotEmpty) {
+          _selectedSubjectCategory3 = _subjectCategories3[0]['id'];
+        }
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching subject categories: $e');
+
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to load subject categories: $e';
+      });
+
+      // Show error to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_errorMessage!),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -77,7 +154,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       }
     } catch (e) {
       print('Error picking image: $e');
-      // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error picking image: $e')),
       );
@@ -160,6 +236,15 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         );
         return;
       }
+
+      // Check if gender is selected
+      if (_selectedGender == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select gender')),
+        );
+        return;
+      }
+
       try {
         // Create Student object from form data
         final student = Student(
@@ -173,7 +258,13 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               : null,
           grade: _selectedGrade!,
           classRoom: _selectedClass!,
+          // Add gender to the student model
+          gender: _selectedGender!,
+          category1: _selectedSubjectCategory1!,
+          category2: _selectedSubjectCategory2!,
+          category3: _selectedSubjectCategory3!,
         );
+
         // Call API to create student with image
         final createdStudent =
             await _apiService.createStudent(student, _imageFile);
@@ -366,31 +457,143 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-
-                // Email
-                TextFormField(
-                  controller: _emailController,
+// Gender Dropdown
+                DropdownButtonFormField<String>(
                   decoration: const InputDecoration(
-                    labelText: 'Guardian Email Address',
-                    hintText: 'Enter student email address',
+                    labelText: 'Gender *',
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email_outlined),
+                    prefixIcon: Icon(Icons.person_outline),
                   ),
-                  keyboardType: TextInputType.emailAddress,
+                  value: _selectedGender,
+                  hint: const Text('Select Gender'),
+                  items: _genders.map((String gender) {
+                    return DropdownMenuItem<String>(
+                      value: gender,
+                      child: Text(gender),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedGender = newValue;
+                    });
+                  },
                   validator: (value) {
-                    if (value != null && value.isNotEmpty) {
-                      // Simple email validation
-                      bool emailValid =
-                          RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                              .hasMatch(value);
-                      if (!emailValid) {
-                        return 'Please enter a valid email address';
-                      }
+                    if (value == null) {
+                      return 'Please select a gender';
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
+                // Email
+                // Subject Category 1 Dropdown
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Subject Category1 *',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.category_outlined),
+                  ),
+                  value: _selectedSubjectCategory1,
+                  hint: const Text('Select Subject Category'),
+                  items: _subjectCategories1.isEmpty
+                      ? [
+                          DropdownMenuItem(
+                            value: null,
+                            child: Text('No categories available'),
+                          )
+                        ]
+                      : _subjectCategories1.map((category) {
+                          return DropdownMenuItem<String>(
+                            value: category['id'],
+                            child: Text(
+                                category['subjectname'] ?? 'Unknown Category'),
+                          );
+                        }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedSubjectCategory1 = newValue;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Please select a subject category';
+                    }
+                    return null;
+                  },
+                ),
+
+// Subject Category 2 Dropdown
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Subject Category2 *',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.category_outlined),
+                  ),
+                  value: _selectedSubjectCategory2,
+                  hint: const Text('Select Subject Category'),
+                  items: _subjectCategories2.isEmpty
+                      ? [
+                          DropdownMenuItem(
+                            value: null,
+                            child: Text('No categories available'),
+                          )
+                        ]
+                      : _subjectCategories2.map((category) {
+                          return DropdownMenuItem<String>(
+                            value: category['id'],
+                            child: Text(
+                                category['subjectname'] ?? 'Unknown Category'),
+                          );
+                        }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedSubjectCategory2 = newValue;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Please select a subject category';
+                    }
+                    return null;
+                  },
+                ),
+
+// Subject Category 3 Dropdown
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Subject Category3 *',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.category_outlined),
+                  ),
+                  value: _selectedSubjectCategory3,
+                  hint: const Text('Select Subject Category'),
+                  items: _subjectCategories3.isEmpty
+                      ? [
+                          DropdownMenuItem(
+                            value: null,
+                            child: Text('No categories available'),
+                          )
+                        ]
+                      : _subjectCategories3.map((category) {
+                          return DropdownMenuItem<String>(
+                            value: category['id'],
+                            child: Text(
+                                category['subjectname'] ?? 'Unknown Category'),
+                          );
+                        }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedSubjectCategory3 = newValue;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Please select a subject category';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 32),
 
                 // Phone Number
                 TextFormField(

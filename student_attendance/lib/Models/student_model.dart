@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class Student {
   final String? id;
   final String indexNumber;
@@ -8,6 +10,11 @@ class Student {
   final String grade;
   final String classRoom;
   final String? profileImageUrl;
+  final String gender;
+  final String category1;
+  final String category2;
+
+  final String category3;
 
   Student({
     this.id,
@@ -19,6 +26,10 @@ class Student {
     required this.grade,
     required this.classRoom,
     this.profileImageUrl,
+    required this.gender,
+    required this.category1,
+    required this.category2,
+    required this.category3,
   });
 
   // Convert Student object to JSON
@@ -33,6 +44,10 @@ class Student {
       'grade': grade,
       'class': classRoom,
       'student_photo': profileImageUrl,
+      'gender': gender,
+      'category1': category1,
+      'category2': category2,
+      'category3': category3,
     };
   }
 
@@ -48,6 +63,10 @@ class Student {
       grade: json['grade'],
       classRoom: json['class'],
       profileImageUrl: json['student_photo'],
+      gender: json['gender'],
+      category1: json['category1'],
+      category2: json['category2'],
+      category3: json['category3'],
     );
   }
 }

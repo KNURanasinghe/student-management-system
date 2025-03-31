@@ -41,6 +41,7 @@ dependencies:
   fl_chart: ^0.70.2
   pocketbase: ^0.22.0
   cached_network_image: ^3.4.1
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:

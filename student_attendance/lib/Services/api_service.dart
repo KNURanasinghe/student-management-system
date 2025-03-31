@@ -271,6 +271,143 @@ class ApiService {
     }
     return ''; // Return empty string if no image available
   }
+
+  Future<dynamic> performCustomApiCall({
+    required String endpoint,
+    String method = 'GET',
+    Map<String, String>? queryParams,
+    Map<String, dynamic>? body,
+  }) async {
+    try {
+      // Construct the full URL with query parameters
+      Uri uri = Uri.parse('$baseUrl$endpoint');
+      if (queryParams != null) {
+        uri = uri.replace(queryParameters: queryParams);
+      }
+
+      // Prepare the request based on the method
+      http.Response response;
+      switch (method.toUpperCase()) {
+        case 'GET':
+          response = await http.get(uri, headers: _headers);
+          break;
+        case 'POST':
+          response = await http.post(uri,
+              headers: _headers, body: body != null ? jsonEncode(body) : null);
+          break;
+        case 'PUT':
+          response = await http.put(uri,
+              headers: _headers, body: body != null ? jsonEncode(body) : null);
+          break;
+        case 'DELETE':
+          response = await http.delete(uri, headers: _headers);
+          break;
+        default:
+          throw Exception('Unsupported HTTP method');
+      }
+
+      // Check response status
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        // Return decoded JSON if possible
+        return response.body.isNotEmpty ? jsonDecode(response.body) : null;
+      } else {
+        throw Exception(
+            'API call failed with status ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      // Rethrow the error for the caller to handle
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getBasket3() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl$_recordsEndpoint/category3/records'),
+      );
+      print('Basket2 Response Status Code: ${response.statusCode}');
+      print('Basket3 Response Body: ${response.body}');
+      if (response.statusCode == 200) {
+        final decodedBody = jsonDecode(response.body);
+        return {'records': decodedBody};
+      } else {
+        throw ApiException(
+          statusCode: response.statusCode,
+          message: 'Failed to get basket details',
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException(
+        statusCode: 500,
+        message: 'An error occurred: ${e.toString()}',
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> getBasket2() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl$_recordsEndpoint/category2/records'),
+      );
+      print('Basket2 Response Status Code: ${response.statusCode}');
+      print('Basket2 response Body: ${response.body}');
+      if (response.statusCode == 200) {
+        final decodedBody = jsonDecode(response.body);
+        return {'records': decodedBody};
+      } else {
+        throw ApiException(
+          statusCode: response.statusCode,
+          message: 'Failed to get basket details',
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException(
+        statusCode: 500,
+        message: 'An error occurred: ${e.toString()}',
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> getBasket1() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl$_recordsEndpoint/category1/records'),
+      );
+
+      print('Basket1 Response Status Code: ${response.statusCode}');
+      print('Basket1 Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final decodedBody = jsonDecode(response.body);
+
+        // Log the structure of the response
+        print('Decoded Basket1 Response: $decodedBody');
+
+        return {'records': decodedBody};
+      } else {
+        throw ApiException(
+          statusCode: response.statusCode,
+          message:
+              'Failed to get basket details. Status code: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('Error in getBasket1: $e');
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException(
+        statusCode: 500,
+        message: 'An error occurred: ${e.toString()}',
+      );
+    }
+  }
 }
 
 // Custom exception class for API errors
